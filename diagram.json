@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "author": "Ali",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-v1", "id": "esp", "top": 131.68, "left": -177.6, "attrs": {} },
+    {
+      "type": "board-ssd1306",
+      "id": "oled1",
+      "top": 319.94,
+      "left": 29.03,
+      "attrs": { "i2cAddress": "0x3c" }
+    },
+    { "type": "board-mfrc522", "id": "rfid1", "top": -41.05, "left": -63.76, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnPlus",
+      "top": 265.4,
+      "left": 144,
+      "attrs": { "color": "green", "label": "+100" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnMinus",
+      "top": 332.6,
+      "left": 144,
+      "attrs": { "color": "red", "label": "-100" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnOk",
+      "top": 399.8,
+      "left": 144,
+      "attrs": { "color": "grey", "label": "OK" }
+    }
+  ],
+  "connections": [
+    [ "esp:D21", "oled1:SDA", "green", [ "v-30", "h-10" ] ],
+    [ "esp:D22", "oled1:SCL", "yellow", [ "v-40", "h-20" ] ],
+    [ "esp:3V3", "oled1:VCC", "red", [ "v-20", "h-10" ] ],
+    [ "esp:GND.1", "oled1:GND", "black", [ "v-10", "h-10" ] ],
+    [ "esp:3V3", "rfid1:3.3V", "red", [ "v50", "h-120" ] ],
+    [ "esp:GND.1", "rfid1:GND", "black", [ "v60", "h-120" ] ],
+    [ "esp:D4", "rfid1:RST", "gray", [ "v70", "h-120" ] ],
+    [ "esp:D5", "rfid1:SDA", "orange", [ "v80", "h-120" ] ],
+    [ "esp:D18", "rfid1:SCK", "brown", [ "v90", "h-120" ] ],
+    [ "esp:D19", "rfid1:MISO", "blue", [ "v100", "h-120" ] ],
+    [ "esp:D23", "rfid1:MOSI", "purple", [ "v110", "h-120" ] ],
+    [ "esp:D13", "btnPlus:1.l", "green", [ "h60" ] ],
+    [ "esp:GND.2", "btnPlus:2.l", "black", [ "h40" ] ],
+    [ "esp:D12", "btnMinus:1.l", "red", [ "h60" ] ],
+    [ "esp:GND.2", "btnMinus:2.l", "black", [ "h40" ] ],
+    [ "esp:D14", "btnOk:1.l", "grey", [ "h60" ] ],
+    [ "esp:GND.2", "btnOk:2.l", "black", [ "h40" ] ]
+  ],
+  "dependencies": {}
+}
