@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-firmware = "sketch.ino"
-elf = "sketch.ino"
+firmware = "build/Monopoly banking.ino.bin"
+elf = "build/Monopoly banking.ino.elf"
