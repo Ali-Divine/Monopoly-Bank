@@ -28,8 +28,8 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnPlus",
-      "top": 265.4,
+      "id": "btn100",
+      "top": 200,
       "left": 144,
       "attrs": {
         "color": "green",
@@ -38,22 +38,62 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnMinus",
-      "top": 332.6,
+      "id": "btn10",
+      "top": 260,
       "left": 144,
       "attrs": {
-        "color": "red",
-        "label": "-100"
+        "color": "green",
+        "label": "+10"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 320,
+      "left": 144,
+      "attrs": {
+        "color": "green",
+        "label": "+1"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnMode",
+      "top": 380,
+      "left": 144,
+      "attrs": {
+        "color": "blue",
+        "label": "MODE +/-"
       }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btnOk",
-      "top": 399.8,
+      "top": 440,
       "left": 144,
       "attrs": {
         "color": "grey",
         "label": "OK"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnGo",
+      "top": 500,
+      "left": 144,
+      "attrs": {
+        "color": "yellow",
+        "label": "PASS GO"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnReset",
+      "top": 560,
+      "left": 144,
+      "attrs": {
+        "color": "red",
+        "label": "RESET"
       }
     }
   ],
@@ -159,7 +199,7 @@
     ],
     [
       "esp:13",
-      "btnPlus:1.l",
+      "btn100:1.l",
       "green",
       [
         "h60"
@@ -167,7 +207,7 @@
     ],
     [
       "esp:GND.2",
-      "btnPlus:2.l",
+      "btn100:2.l",
       "black",
       [
         "h40"
@@ -175,15 +215,15 @@
     ],
     [
       "esp:12",
-      "btnMinus:1.l",
-      "red",
+      "btn10:1.l",
+      "green",
       [
         "h60"
       ]
     ],
     [
       "esp:GND.2",
-      "btnMinus:2.l",
+      "btn10:2.l",
       "black",
       [
         "h40"
@@ -191,6 +231,38 @@
     ],
     [
       "esp:14",
+      "btn1:1.l",
+      "green",
+      [
+        "h60"
+      ]
+    ],
+    [
+      "esp:GND.2",
+      "btn1:2.l",
+      "black",
+      [
+        "h40"
+      ]
+    ],
+    [
+      "esp:27",
+      "btnMode:1.l",
+      "blue",
+      [
+        "h60"
+      ]
+    ],
+    [
+      "esp:GND.2",
+      "btnMode:2.l",
+      "black",
+      [
+        "h40"
+      ]
+    ],
+    [
+      "esp:26",
       "btnOk:1.l",
       "grey",
       [
@@ -200,6 +272,38 @@
     [
       "esp:GND.2",
       "btnOk:2.l",
+      "black",
+      [
+        "h40"
+      ]
+    ],
+    [
+      "esp:25",
+      "btnGo:1.l",
+      "yellow",
+      [
+        "h60"
+      ]
+    ],
+    [
+      "esp:GND.2",
+      "btnGo:2.l",
+      "black",
+      [
+        "h40"
+      ]
+    ],
+    [
+      "esp:33",
+      "btnReset:1.l",
+      "red",
+      [
+        "h60"
+      ]
+    ],
+    [
+      "esp:GND.2",
+      "btnReset:2.l",
       "black",
       [
         "h40"
