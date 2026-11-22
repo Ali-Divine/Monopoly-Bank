@@ -12,7 +12,7 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 
 ## Components
 
-* 1x ESP32 DevKit v1 (30 pin)
+* 1x ESP32 DevKitC v4 (38 pin)
 * 1x SSD1306 0.96" I2C OLED Display (128x64)
 * 1x RC522 RFID Reader (SPI)
 * 3x Push Buttons (+100, minus 100, OK)
@@ -53,3 +53,11 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 3. Press **+100** or **minus 100** to stage the transaction amount.
 4. Press **OK** to commit the transaction to memory.
 5. The display shows the updated balance and returns to the ready screen.
+
+## Demo & Testing
+
+### Bank working after installed arduino.cli and esp libraries
+![Monopoly Bank Powered On](working_image.png)
+
+### Testing video
+
