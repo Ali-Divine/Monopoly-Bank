@@ -6,15 +6,15 @@
     {
       "type": "board-esp32-devkit-c-v4",
       "id": "esp",
-      "top": 131.68,
-      "left": -177.6,
+      "top": 153.6,
+      "left": -91.16,
       "attrs": {}
     },
     {
       "type": "board-ssd1306",
       "id": "oled1",
-      "top": 319.94,
-      "left": 29.03,
+      "top": 415.94,
+      "left": -143.77,
       "attrs": {
         "i2cAddress": "0x3c"
       }
@@ -22,15 +22,15 @@
     {
       "type": "board-mfrc522",
       "id": "rfid1",
-      "top": -41.05,
-      "left": -63.76,
+      "top": 573.35,
+      "left": -217.36,
       "attrs": {}
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn100",
-      "top": 200,
-      "left": 144,
+      "top": 371,
+      "left": -211.2,
       "attrs": {
         "color": "green",
         "label": "+100"
@@ -39,8 +39,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btn10",
-      "top": 260,
-      "left": 144,
+      "top": 438.2,
+      "left": -211.2,
       "attrs": {
         "color": "green",
         "label": "+10"
@@ -49,8 +49,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btn1",
-      "top": 320,
-      "left": 144,
+      "top": 505.4,
+      "left": -211.2,
       "attrs": {
         "color": "green",
         "label": "+1"
@@ -59,8 +59,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btnMode",
-      "top": 380,
-      "left": 144,
+      "top": 371,
+      "left": -38.4,
       "attrs": {
         "color": "blue",
         "label": "MODE +/-"
@@ -69,8 +69,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btnOk",
-      "top": 440,
-      "left": 144,
+      "top": 438.2,
+      "left": -38.4,
       "attrs": {
         "color": "grey",
         "label": "OK"
@@ -79,8 +79,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btnGo",
-      "top": 500,
-      "left": 144,
+      "top": 505.4,
+      "left": -38.4,
       "attrs": {
         "color": "yellow",
         "label": "PASS GO"
@@ -89,8 +89,8 @@
     {
       "type": "wokwi-pushbutton",
       "id": "btnReset",
-      "top": 560,
-      "left": 144,
+      "top": 188.6,
+      "left": -201.6,
       "attrs": {
         "color": "red",
         "label": "RESET"

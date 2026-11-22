@@ -69,10 +69,11 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 ## Demo & Testing
 
 ### Bank working after installed arduino.cli and esp libraries
-![Monopoly Bank Powered On](working_image.png)
+
 
 ### Testing video
-https://github.com/user-attachments/assets/99011bdf-842c-418f-a415-bb3b6192c44c
+
+ima include the pictures and video from github cuz its easy bruh
 
 
 
