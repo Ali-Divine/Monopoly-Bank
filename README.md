@@ -60,4 +60,7 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 ![Monopoly Bank Powered On](working_image.png)
 
 ### Testing video
+https://github.com/user-attachments/assets/99011bdf-842c-418f-a415-bb3b6192c44c
+
+
 
