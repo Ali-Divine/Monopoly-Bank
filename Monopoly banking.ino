@@ -32,13 +32,14 @@ struct Player {
   String uid;
   String name;
   long balance;
+  bool isBankrupt;
 };
 
 Player players[4] = {
-  {"", "Player 1", 1500},
-  {"", "Player 2", 1500},
-  {"", "Player 3", 1500},
-  {"", "Player 4", 1500}
+  {"", "Player 1", 1500, false},
+  {"", "Player 2", 1500, false},
+  {"", "Player 3", 1500, false},
+  {"", "Player 4", 1500, false}
 };
 
 int activePlayerIndex = -1;
@@ -178,9 +179,11 @@ void savePlayerData(int index) {
   prefs.begin("bank", false);
   String uidKey = "uid" + String(index);
   String balKey = "bal" + String(index);
+  String bkrKey = "bkr" + String(index);
 
   prefs.putString(uidKey.c_str(), players[index].uid);
   prefs.putLong(balKey.c_str(), players[index].balance);
+  prefs.putBool(bkrKey.c_str(), players[index].isBankrupt);
   prefs.end();
 
   Serial.print("Saved to Flash: ");
@@ -194,14 +197,17 @@ void loadAllPlayerData() {
   for (int i = 0; i < 4; i++) {
     String uidKey = "uid" + String(i);
     String balKey = "bal" + String(i);
+    String bkrKey = "bkr" + String(i);
 
     String savedUID = prefs.getString(uidKey.c_str(), "");
     long savedBalance = prefs.getLong(balKey.c_str(), 1500);
+    bool savedBankrupt = prefs.getBool(bkrKey.c_str(), false);
 
     if (savedUID != "") {
       players[i].uid = savedUID;
     }
     players[i].balance = savedBalance;
+    players[i].isBankrupt = savedBankrupt;
   }
   prefs.end();
 }
@@ -244,9 +250,14 @@ void handleRFID() {
   }
 
   if (foundIndex != -1) {
-    activePlayerIndex = foundIndex;
-    pendingDelta = 0;
-    updateTransactionScreen();
+    if (players[foundIndex].isBankrupt) {
+      showPopup("BANKRUPT!", players[foundIndex].name.c_str(), "Locked Out", 1800);
+      showIdleScreen();
+    } else {
+      activePlayerIndex = foundIndex;
+      pendingDelta = 0;
+      updateTransactionScreen();
+    }
   } else {
     showPopup("LIMIT REACHED", "All 4 card slots", "already mapped", 1500);
     showIdleScreen();
@@ -289,9 +300,28 @@ void handleBankButtons() {
     long finalDelta = isDeductMode ? -pendingDelta : pendingDelta;
 
     if (players[activePlayerIndex].balance + finalDelta < 0) {
-      showPopup("BANKRUPT!", "Insufficient funds", "Transaction denied", 1600);
+      showPopup("BANKRUPT?", "RED=Confirm Fold", "OK=Cancel", 0);
+      delay(300);
+
+      while (true) {
+        if (digitalRead(btnResetPin) == LOW) {
+          players[activePlayerIndex].balance = 0;
+          players[activePlayerIndex].isBankrupt = true;
+          savePlayerData(activePlayerIndex);
+
+          showPopup("BANKRUPT!", players[activePlayerIndex].name.c_str(), "Out of the Game!", 2000);
+          break;
+        }
+        if (digitalRead(btnOkPin) == LOW) {
+          break;
+        }
+        delay(20);
+      }
+
+      activePlayerIndex = -1;
       pendingDelta = 0;
-      updateTransactionScreen();
+      isDeductMode = false;
+      showIdleScreen();
       return;
     }
 
@@ -333,12 +363,16 @@ void handlePassGo() {
       }
 
       if (foundIndex != -1) {
-        players[foundIndex].balance += goReward;
-        savePlayerData(foundIndex);
+        if (players[foundIndex].isBankrupt) {
+          showPopup("DENIED", players[foundIndex].name.c_str(), "Is Bankrupt!", 1600);
+        } else {
+          players[foundIndex].balance += goReward;
+          savePlayerData(foundIndex);
 
-        char balStr[20];
-        sprintf(balStr, "New: $%ld", players[foundIndex].balance);
-        showPopup("GO COLLECTED!", players[foundIndex].name.c_str(), balStr, 1500);
+          char balStr[20];
+          sprintf(balStr, "New: $%ld", players[foundIndex].balance);
+          showPopup("GO COLLECTED!", players[foundIndex].name.c_str(), balStr, 1500);
+        }
       } else {
         showPopup("ERROR", "Unregistered card", nullptr, 1500);
       }
@@ -357,8 +391,11 @@ void handleGameReset() {
   prefs.begin("bank", false);
   for (int i = 0; i < 4; i++) {
     players[i].balance = 1500;
+    players[i].isBankrupt = false;
     String balKey = "bal" + String(i);
+    String bkrKey = "bkr" + String(i);
     prefs.putLong(balKey.c_str(), 1500);
+    prefs.putBool(bkrKey.c_str(), false);
   }
   prefs.end();
 

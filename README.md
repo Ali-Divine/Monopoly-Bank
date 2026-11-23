@@ -10,7 +10,8 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 * Flexible keypad transaction staging (+100, +10, +1) with a MODE toggle for deposits and deductions
 * Pass GO button 
 * Game Reset button 
-* Bankruptcy and insufficient funds protection
+* Full bankruptcy mechanic with fold confirmation, automatic card lockout, and balance wipe to $0
+* Negative balance safety checks preventing accidental overdrafts during standard play
 
 ## Components
 
@@ -58,13 +59,21 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 3. Press **MODE** to toggle between **[+] DEPOSIT** and **[-] DEDUCT**.
 4. Press **OK** to save the transaction to memory.
 
+### Declaring Bankruptcy
+1. If a deduction exceeds a player's current balance, the screen prompts **BANKRUPT?**.
+2. Press **RESET** to confirm folding:
+   * Balance drops to **$0**.
+   * Player is marked **Bankrupt** in flash storage.
+   * The card is permanently locked out from transactions and Pass GO rewards until a full game reset.
+3. Or press **OK** to cancel the deduction and return to the game without penalty.
+
 ### Pass GO (+$200)
 1. Press the **PASS GO** button from the ready screen.
 2. Tap your RFID card to instantly get $200.
 
 ### Game Reset
 1. Press the **RESET** button from the ready screen.
-2. All 4 player balances reset back to $1500 in memory.
+2. All 4 player balances reset back to $1500 in flash memory and any bankrupt players are restored to active status.
 
 ## Demo & Testing
 
