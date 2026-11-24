@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-firmware = "build/Monopoly banking.ino.bin"
-elf = "build/Monopoly banking.ino.elf"
+firmware = "Monopoly_Bank.ino"
+elf = "Monopoly_Bank.ino"
