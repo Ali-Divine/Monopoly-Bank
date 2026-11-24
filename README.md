@@ -53,6 +53,20 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 * Button RESET(Terminal 1) = ESP32(GPIO 33)
 * All Buttons(Terminal 2) = ESP32(GND)
 
+## Enclosure / CAD (Onshape)
+
+I didn't know CAD before starting this, so I picked up Onshape and learned the basics in about 2 hours to design the casing from scratch. 
+
+Right now this is a work in progress:
+* Built the main sloped two piece shell (top body + bottom plate)
+* Added corner screw pillars and counterbore holes to hold both halves together
+* Cutouts for the OLED screen, 6 keypad buttons, and the reset button
+* Bottom slot cut out so the RFID card can slide right in
+* Internal mounting standoffs configured for the RC522 RFID board
+
+More cutouts and mounting spots for the rest of the parts are coming in the next version.
+(the 3D files r in the folder named CAD btw)
+
 ## How to Use
 
 ### Regular Transactions
