@@ -57,19 +57,17 @@ An electronic banking terminal for Monopoly built on an ESP32. It replaces paper
 
 I didn't know CAD before starting this, so I picked up Onshape and learned the basics in about 2 hours to design the casing from scratch. 
 
-### Enclosure v2: Full Overhaul and Mechanical Switch Plate
+### Enclosure v3: Full Internal Architecture & Hardware Mounts
+v2 was basically just an empty box with screw holes. It looked cool from the outside, but inside there was nothing to hold the parts, meaning stuff would just bounce around or need hot glue. For v3, I built out the whole inside so every single piece has its own snap in spot.
 
-The original v1 shell was fine for a first pass, but having everything trapped in a single deep unibody made mounting and wiring miserable. I completely scrapped that structure and rebuilt the casing from the ground up as a two piece modular assembly: a deep bathtub base to house all the raw electronics, and a flat faceplate lid that drops cleanly over top.
-
-#### What Changed in v2:
-* **Mechanical Switch Grid (3x2):** Ditched the generic circular push buttons. The front plate now holds a 3x2 matrix of standard MX mechanical switches for real tactile feedback. Each cutout is measured to 14.1 x 14.1 mm (giving a 0.1 mm tolerance for 3D printing so switches snap straight in without filing).
-* **Under-Plate Retention Pockets:** MX switches need a 1.5 mm plate thickness for their side clips to actually spring out and lock. Because the front plate needs to be thick and rigid, I cut 1.5 mm deep clearance pockets on the underside around every switch cutout. The clips bite onto a 1.5 mm lip from the back and lock tight without glue.
-* **Handheld Ergonomics:** Instead of clumping the keys together like a keyboard numpad, columns are widened to 34.0 mm center to center and rows sit at 22.0 mm vertical pitch. The whole cluster starts at the horizontal center line and steps downward, keeping your thumbs in a natural grip without fat-fingering keys.
-* **OLED Window:** Centered 24.0 x 13.0 mm display cutout positioned in the upper half of the faceplate for the 0.96 inch SSD1306 display, keeping the delicate screen glass isolated from direct thumb pressure.
-* **Screw Mounting and Base Tub:** Added four corner M3 screw mounts with countersinks on the top plate and reinforced standoff cylinders inside the base tub. The base tub is 23.0 mm deep with 2.5 mm thick walls, leaving plenty of room for the ESP32, RFID module, and internal wiring harness.
+##What Changed in v3:
+* **ESP32 Bed & USB Port:** Made a snug little tray on the floor for the ESP32 so it can't slide around, and lined it up so the micro USB cable plugs right in through a neat cutout on the side.
+* **RFID Mount & Card Slot:** Added posts to screw the RC522 reader upside down, plus a smooth side slot and a guide brace so cards slide right over the sensor.
+* **OLED Screen Mount:** Added 4 little screw posts under the lid right around the screen window to hold the display tight without cracking the glass.
+* **Casio-Style Reset Button:** Put a recessed dish on the left side with a custom 3D printed button plunger, looks like an old calculator button so nobody wipes the game balances by mistake.
+* **Custom Keycaps:** Modeled the 1U keycaps from scratch to fit right on the switches and finish up the whole look.
 
 CAD models (STEP and STL) are available in the `/cad` directory.
-More updates coming soon...after my exam prep probably hehe
 
 ## How to Use
 
