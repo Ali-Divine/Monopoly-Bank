@@ -5,34 +5,28 @@
 #include <Adafruit_SSD1306.h>
 #include <Preferences.h>
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-#define OLED_ADDRESS 0x3C
-Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 screen(128, 64, &Wire, -1);
+MFRC522 reader(5, 4); // SS=5, RST=4
+Preferences mem;
 
-#define SS_PIN 5
-#define RST_PIN 4
-MFRC522 rfid(SS_PIN, RST_PIN);
+// Button pins
+const int btn100 = 13;
+const int btn10  = 12; // Strapping pin....... do not press while powering on
+const int btn1   = 14;
+const int mode   = 27; // Switch deposit / deduct / transfer
+const int ok     = 26;
+const int go     = 25; // Pass go shortcut (+200)
+const int reset  = 33; // Side button: clear tray / hold to wipe / cancel
 
-const int btn100Pin = 13;
-const int btn10Pin = 12;
-const int btn1Pin = 14;
-const int btnModePin = 27;
-const int btnOkPin = 26;
-const int btnGoPin = 25;
-const int btnResetPin = 33;
-
-bool isDeductMode = false;
-const long goReward = 200;
-
-Preferences prefs;
+// 0 = Deposit, 1 = Deduct, 2 = Transfer
+int opMode = 0; 
+const long goreward = 200;
 
 struct Player {
-  String uid;
+  String card;
   String name;
-  long balance;
-  bool isBankrupt;
+  long money;
+  bool isout;
 };
 
 Player players[4] = {
@@ -42,363 +36,484 @@ Player players[4] = {
   {"", "Player 4", 1500, false}
 };
 
-int activePlayerIndex = -1;
-long pendingDelta = 0;
-unsigned long lastDebounce = 0;
-const unsigned long debounceDelay = 180;
+int activeplayer = -1;
+long amount = 0;
+unsigned long lastpress = 0;
+unsigned long lastActionTime = 0;
+const unsigned long wait = 180;
+const unsigned long TIMEOUT_MS = 25000;
 
-void showIdleScreen();
-void updateTransactionScreen();
-void showPopup(const char* title, const char* body1, const char* body2, int delayMs);
-void handleRFID();
-void handleBankButtons();
-void handlePassGo();
-void handleGameReset();
-void savePlayerData(int index);
-void loadAllPlayerData();
+void popup(const char* title, const char* line1, const char* line2, int ms) {
+  screen.clearDisplay();
+  screen.drawRect(0, 0, 128, 64, SSD1306_WHITE);
+  screen.fillRect(0, 0, 128, 14, SSD1306_WHITE);
+  
+  screen.setTextColor(SSD1306_BLACK);
+  screen.setTextSize(1);
+  screen.setCursor(6, 3);
+  screen.print(title);
 
-void setup() {
-  Serial.begin(115200);
-
-  Wire.begin(21, 22);
-
-  if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
-    Serial.println("OLED init failed!");
+  screen.setTextColor(SSD1306_WHITE);
+  screen.setTextSize(1);
+  screen.setCursor(10, 24);
+  screen.print(line1);
+  if (line2 != nullptr) {
+    screen.setCursor(10, 42);
+    screen.print(line2);
   }
 
-  SPI.begin();
-  rfid.PCD_Init();
-
-  pinMode(btn100Pin, INPUT_PULLUP);
-  pinMode(btn10Pin, INPUT_PULLUP);
-  pinMode(btn1Pin, INPUT_PULLUP);
-  pinMode(btnModePin, INPUT_PULLUP);
-  pinMode(btnOkPin, INPUT_PULLUP);
-  pinMode(btnGoPin, INPUT_PULLUP);
-  pinMode(btnResetPin, INPUT_PULLUP);
-
-  loadAllPlayerData();
-
-  showIdleScreen();
-  Serial.println("Monopoly Banking Terminal Ready.");
+  screen.display();
+  delay(ms);
 }
 
-void loop() {
-  if (activePlayerIndex == -1) {
-    if (millis() - lastDebounce >= debounceDelay) {
-      if (digitalRead(btnGoPin) == LOW) {
-        lastDebounce = millis();
-        handlePassGo();
-        return;
-      }
-      if (digitalRead(btnResetPin) == LOW) {
-        lastDebounce = millis();
-        handleGameReset();
-        return;
-      }
-    }
-    handleRFID();
-  } else {
-    handleBankButtons();
-  }
-}
+void idlescreen() {
+  activeplayer = -1;
+  amount = 0;
+  opMode = 0;
 
-void showIdleScreen() {
-  oled.clearDisplay();
+  screen.clearDisplay();
+  screen.fillRect(0, 0, 128, 14, SSD1306_WHITE);
+  screen.setTextColor(SSD1306_BLACK);
+  screen.setTextSize(1);
+  screen.setCursor(14, 3);
+  screen.print("MONOPOLY BANK");
+
+  screen.setTextColor(SSD1306_WHITE);
+  screen.drawRoundRect(6, 20, 116, 40, 4, SSD1306_WHITE);
+  screen.setCursor(20, 28);
+  screen.print("TAP RFID CARD");
+  screen.setCursor(26, 42);
+  screen.print("TO DEPOSIT/PAY");
   
-  oled.fillRect(0, 0, 128, 14, SSD1306_WHITE);
-  oled.setTextColor(SSD1306_BLACK);
-  oled.setTextSize(1);
-  oled.setCursor(14, 3);
-  oled.print("MONOPOLY BANKING");
-
-  oled.setTextColor(SSD1306_WHITE);
-  oled.drawRoundRect(6, 20, 116, 40, 4, SSD1306_WHITE);
-  oled.setCursor(20, 28);
-  oled.print("TAP RFID CARD");
-  oled.setCursor(26, 42);
-  oled.print("TO DEPOSIT/PAY");
-  
-  oled.display();
+  screen.display();
 }
 
-void updateTransactionScreen() {
-  oled.clearDisplay();
+void bankscreen() {
+  screen.clearDisplay();
 
-  oled.fillRect(0, 0, 128, 14, SSD1306_WHITE);
-  oled.setTextColor(SSD1306_BLACK);
-  oled.setTextSize(1);
-  oled.setCursor(4, 3);
-  oled.print(players[activePlayerIndex].name);
+  screen.fillRect(0, 0, 128, 14, SSD1306_WHITE);
+  screen.setTextColor(SSD1306_BLACK);
+  screen.setTextSize(1);
+  screen.setCursor(4, 3);
+  screen.print(players[activeplayer].name);
 
-  oled.setTextColor(SSD1306_WHITE);
-  oled.setCursor(4, 18);
-  oled.print("Bal: $");
-  oled.setTextSize(2);
-  oled.setCursor(44, 16);
-  oled.print(players[activePlayerIndex].balance);
+  screen.setTextColor(SSD1306_WHITE);
+  screen.setCursor(4, 18);
+  screen.print("Bal: $");
+  screen.setTextSize(2);
+  screen.setCursor(44, 16);
+  screen.print(players[activeplayer].money);
 
-  oled.drawFastHLine(0, 34, 128, SSD1306_WHITE);
+  screen.drawFastHLine(0, 34, 128, SSD1306_WHITE);
 
-  oled.setTextSize(1);
-  oled.setCursor(4, 38);
-  oled.print(isDeductMode ? "[-] DEDUCT" : "[+] DEPOSIT");
+  screen.setTextSize(1);
+  screen.setCursor(4, 38);
+  if (opMode == 0) screen.print("[+] DEPOSIT");
+  else if (opMode == 1) screen.print("[-] DEDUCT");
+  else screen.print("[>] TRANSFER");
 
-  oled.setTextSize(2);
-  oled.setCursor(4, 48);
-  oled.print("$");
-  oled.print(pendingDelta);
+  screen.setTextSize(2);
+  screen.setCursor(4, 48);
+  screen.print("$");
+  screen.print(amount);
 
-  oled.display();
+  screen.display();
+  screen.setTextSize(1);
 }
 
-void showPopup(const char* title, const char* body1, const char* body2, int delayMs) {
-  oled.clearDisplay();
-  oled.drawRect(0, 0, 128, 64, SSD1306_WHITE);
-  oled.fillRect(0, 0, 128, 14, SSD1306_WHITE);
-  
-  oled.setTextColor(SSD1306_BLACK);
-  oled.setTextSize(1);
-  oled.setCursor(6, 3);
-  oled.print(title);
+void saveplayer(int p) {
+  char key[8];
+  snprintf(key, sizeof(key), "bal%d", p);
+  mem.putLong(key, players[p].money);
 
-  oled.setTextColor(SSD1306_WHITE);
-  oled.setTextSize(1);
-  oled.setCursor(10, 24);
-  oled.print(body1);
-  if (body2 != nullptr) {
-    oled.setCursor(10, 42);
-    oled.print(body2);
-  }
-
-  oled.display();
-  delay(delayMs);
+  snprintf(key, sizeof(key), "bkr%d", p);
+  mem.putBool(key, players[p].isout);
 }
 
-void savePlayerData(int index) {
-  prefs.begin("bank", false);
-  String uidKey = "uid" + String(index);
-  String balKey = "bal" + String(index);
-  String bkrKey = "bkr" + String(index);
-
-  prefs.putString(uidKey.c_str(), players[index].uid);
-  prefs.putLong(balKey.c_str(), players[index].balance);
-  prefs.putBool(bkrKey.c_str(), players[index].isBankrupt);
-  prefs.end();
-
-  Serial.print("Saved to Flash: ");
-  Serial.print(players[index].name);
-  Serial.print(" Balance: $");
-  Serial.println(players[index].balance);
+void saveCardUID(int p) {
+  char key[8];
+  snprintf(key, sizeof(key), "uid%d", p);
+  mem.putString(key, players[p].card);
 }
 
-void loadAllPlayerData() {
-  prefs.begin("bank", true);
+void loaddata() {
   for (int i = 0; i < 4; i++) {
-    String uidKey = "uid" + String(i);
-    String balKey = "bal" + String(i);
-    String bkrKey = "bkr" + String(i);
-
-    String savedUID = prefs.getString(uidKey.c_str(), "");
-    long savedBalance = prefs.getLong(balKey.c_str(), 1500);
-    bool savedBankrupt = prefs.getBool(bkrKey.c_str(), false);
-
-    if (savedUID != "") {
-      players[i].uid = savedUID;
+    char key[8];
+    snprintf(key, sizeof(key), "uid%d", i);
+    String savedcard = mem.getString(key, "");
+    if (savedcard != "") {
+      players[i].card = savedcard;
     }
-    players[i].balance = savedBalance;
-    players[i].isBankrupt = savedBankrupt;
+    snprintf(key, sizeof(key), "bal%d", i);
+    players[i].money = mem.getLong(key, 1500);
+
+    snprintf(key, sizeof(key), "bkr%d", i);
+    players[i].isout = mem.getBool(key, false);
   }
-  prefs.end();
 }
 
-void handleRFID() {
-  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
-    return;
+void handlecard() {
+  if (!reader.PICC_IsNewCardPresent() || !reader.PICC_ReadCardSerial()) return;
+
+  String uid = "";
+  for (byte i = 0; i < reader.uid.size; i++) {
+    uid += (reader.uid.uidByte[i] < 0x10 ? "0" : "");
+    uid += String(reader.uid.uidByte[i], HEX);
+    if (i < reader.uid.size - 1) uid += " ";
   }
+  uid.toUpperCase();
 
-  String scannedUID = "";
-  for (byte i = 0; i < rfid.uid.size; i++) {
-    scannedUID += (rfid.uid.uidByte[i] < 0x10 ? "0" : "");
-    scannedUID += String(rfid.uid.uidByte[i], HEX);
-    if (i < rfid.uid.size - 1) scannedUID += " ";
-  }
-  scannedUID.toUpperCase();
-
-  Serial.print("Card Scanned: ");
-  Serial.println(scannedUID);
-
-  int foundIndex = -1;
+  int slot = -1;
   for (int i = 0; i < 4; i++) {
-    if (players[i].uid == scannedUID) {
-      foundIndex = i;
+    if (players[i].card == uid) {
+      slot = i;
       break;
     }
   }
 
-  if (foundIndex == -1) {
+  if (slot == -1) {
     for (int i = 0; i < 4; i++) {
-      if (players[i].uid == "") {
-        players[i].uid = scannedUID;
-        foundIndex = i;
-        savePlayerData(foundIndex);
-        Serial.print("Bound to ");
-        Serial.println(players[i].name);
+      if (players[i].card == "") {
+        players[i].card = uid;
+        slot = i;
+        saveCardUID(slot);
+        saveplayer(slot);
         break;
       }
     }
   }
 
-  if (foundIndex != -1) {
-    if (players[foundIndex].isBankrupt) {
-      showPopup("BANKRUPT!", players[foundIndex].name.c_str(), "Locked Out", 1800);
-      showIdleScreen();
+  if (slot != -1) {
+    if (players[slot].isout) {
+      popup("BANKRUPT!", players[slot].name.c_str(), "Locked Out", 1800);
+      idlescreen();
     } else {
-      activePlayerIndex = foundIndex;
-      pendingDelta = 0;
-      updateTransactionScreen();
+      activeplayer = slot;
+      amount = 0;
+      opMode = 0;
+      lastActionTime = millis();
+      bankscreen();
     }
   } else {
-    showPopup("LIMIT REACHED", "All 4 card slots", "already mapped", 1500);
-    showIdleScreen();
+    popup("LIMIT REACHED", "All 4 card slots", "already mapped", 1500);
+    idlescreen();
   }
 
-  rfid.PICC_HaltA();
-  rfid.PCD_StopCrypto1();
+  reader.PICC_HaltA();
+  reader.PCD_StopCrypto1();
 }
 
-void handleBankButtons() {
-  if (millis() - lastDebounce < debounceDelay) return;
+void renderTransferMenu(int targets[], int count, int selIndex) {
+  screen.clearDisplay();
+  screen.fillRect(0, 0, 128, 14, SSD1306_WHITE);
+  screen.setTextColor(SSD1306_BLACK);
+  screen.setTextSize(1);
+  screen.setCursor(4, 3);
+  screen.print("SEND: $");
+  screen.print(amount);
 
-  if (digitalRead(btn100Pin) == LOW) {
-    pendingDelta += 100;
-    lastDebounce = millis();
-    updateTransactionScreen();
+  screen.setTextColor(SSD1306_WHITE);
+  int y = 17;
+  for (int i = 0; i < count; i++) {
+    screen.setCursor(4, y);
+    screen.print(i == selIndex ? "> " : "  ");
+    screen.print(players[targets[i]].name);
+    screen.print(" ($");
+    screen.print(players[targets[i]].money);
+    screen.print(")");
+    y += 11;
+  }
+  
+  screen.setCursor(4, 53);
+  screen.print("Tap:Next | Hold:Send");
+  screen.display();
+}
+
+void handleTransfer() {
+  if (amount <= 0) {
+    popup("ERROR", "Amount is $0", nullptr, 1200);
+    bankscreen();
+    return;
   }
 
-  if (digitalRead(btn10Pin) == LOW) {
-    pendingDelta += 10;
-    lastDebounce = millis();
-    updateTransactionScreen();
+  if (players[activeplayer].money < amount) {
+    popup("NO FUNDS", "Not enough cash!", nullptr, 1500);
+    bankscreen();
+    return;
   }
 
-  if (digitalRead(btn1Pin) == LOW) {
-    pendingDelta += 1;
-    lastDebounce = millis();
-    updateTransactionScreen();
+  int targets[3];
+  int count = 0;
+  for (int i = 0; i < 4; i++) {
+    if (i != activeplayer && players[i].card != "" && !players[i].isout) {
+      targets[count++] = i;
+    }
   }
 
-  if (digitalRead(btnModePin) == LOW) {
-    isDeductMode = !isDeductMode;
-    lastDebounce = millis();
-    updateTransactionScreen();
+  if (count == 0) {
+    popup("NO TARGETS", "No other players", "registered yet", 1600);
+    bankscreen();
+    return;
   }
 
-  if (digitalRead(btnOkPin) == LOW) {
-    lastDebounce = millis();
+  int sel = 0;
+  renderTransferMenu(targets, count, sel);
+  delay(250);
 
-    long finalDelta = isDeductMode ? -pendingDelta : pendingDelta;
+  unsigned long menuAction = millis();
 
-    if (players[activePlayerIndex].balance + finalDelta < 0) {
-      showPopup("BANKRUPT?", "RED=Confirm Fold", "OK=Cancel", 0);
-      delay(300);
+  while (true) {
+    if (millis() - menuAction > TIMEOUT_MS) {
+      idlescreen();
+      return;
+    }
 
-      while (true) {
-        if (digitalRead(btnResetPin) == LOW) {
-          players[activePlayerIndex].balance = 0;
-          players[activePlayerIndex].isBankrupt = true;
-          savePlayerData(activePlayerIndex);
+    if (digitalRead(reset) == LOW || digitalRead(mode) == LOW) {
+      delay(200);
+      lastActionTime = millis();
+      bankscreen();
+      return;
+    }
 
-          showPopup("BANKRUPT!", players[activePlayerIndex].name.c_str(), "Out of the Game!", 2000);
-          break;
-        }
-        if (digitalRead(btnOkPin) == LOW) {
+    if (digitalRead(ok) == LOW) {
+      unsigned long pressStart = millis();
+      bool held = false;
+
+      while (digitalRead(ok) == LOW) {
+        if (millis() - pressStart >= 2000) {
+          held = true;
           break;
         }
         delay(20);
       }
 
-      activePlayerIndex = -1;
-      pendingDelta = 0;
-      isDeductMode = false;
-      showIdleScreen();
+      if (held) {
+        while (digitalRead(ok) == LOW) delay(10); // Wait for button release
+
+        int targetPlayer = targets[sel];
+        players[activeplayer].money -= amount;
+        players[targetPlayer].money += amount;
+
+        saveplayer(activeplayer);
+        saveplayer(targetPlayer);
+
+        char msgTarget[24];
+        snprintf(msgTarget, sizeof(msgTarget), "Sent to %s", players[targetPlayer].name.c_str());
+
+        char balmsg[20];
+        snprintf(balmsg, sizeof(balmsg), "New: $%ld", players[activeplayer].money);
+        popup("TRANSFER OK!", msgTarget, balmsg, 1800);
+
+        idlescreen();
+        return;
+      } else {
+        sel = (sel + 1) % count;
+        menuAction = millis();
+        renderTransferMenu(targets, count, sel);
+        delay(150);
+      }
+    }
+    delay(20);
+  }
+}
+
+void handlebuttons() {
+  if (millis() - lastActionTime > TIMEOUT_MS) {
+    idlescreen();
+    return;
+  }
+
+  if (millis() - lastpress < wait) return;
+
+  bool actionTaken = false;
+
+  if (digitalRead(btn100) == LOW) {
+    amount += 100;
+    actionTaken = true;
+    bankscreen();
+  }
+  else if (digitalRead(btn10) == LOW) {
+    amount += 10;
+    actionTaken = true;
+    bankscreen();
+  }
+  else if (digitalRead(btn1) == LOW) {
+    amount += 1;
+    actionTaken = true;
+    bankscreen();
+  }
+  else if (digitalRead(mode) == LOW) {
+    opMode = (opMode + 1) % 3;
+    actionTaken = true;
+    bankscreen();
+  }
+  else if (digitalRead(reset) == LOW) {
+    amount = 0;
+    actionTaken = true;
+    bankscreen();
+  }
+  else if (digitalRead(ok) == LOW) {
+    lastpress = millis();
+    lastActionTime = millis();
+
+    if (opMode == 2) {
+      handleTransfer();
       return;
     }
 
-    players[activePlayerIndex].balance += finalDelta;
-    savePlayerData(activePlayerIndex);
+    long delta = (opMode == 1) ? -amount : amount;
 
-    char balStr[20];
-    sprintf(balStr, "New: $%ld", players[activePlayerIndex].balance);
-    showPopup("TRANSACTION OK", players[activePlayerIndex].name.c_str(), balStr, 1500);
+    if (players[activeplayer].money + delta < 0) {
+      popup("BANKRUPT?", "RED=Confirm Fold", "OK=Cancel", 0);
+      delay(300);
 
-    activePlayerIndex = -1;
-    pendingDelta = 0;
-    isDeductMode = false;
-    showIdleScreen();
+      while (true) {
+        if (digitalRead(reset) == LOW) {
+          while (digitalRead(reset) == LOW) delay(10);
+          players[activeplayer].money = 0;
+          players[activeplayer].isout = true;
+          saveplayer(activeplayer);
+          popup("BANKRUPT!", players[activeplayer].name.c_str(), "Out of the Game!", 2000);
+          break;
+        }
+        if (digitalRead(ok) == LOW) {
+          while (digitalRead(ok) == LOW) delay(10);
+          break;
+        }
+        delay(20);
+      }
+
+      idlescreen();
+      return;
+    }
+
+    players[activeplayer].money += delta;
+    saveplayer(activeplayer);
+
+    char balmsg[20];
+    snprintf(balmsg, sizeof(balmsg), "New: $%ld", players[activeplayer].money);
+    popup("TRANSACTION OK", players[activeplayer].name.c_str(), balmsg, 1500);
+
+    idlescreen();
+    return;
+  }
+
+  if (actionTaken) {
+    lastpress = millis();
+    lastActionTime = millis();
   }
 }
- 
-void handlePassGo() {
-  showPopup("PASS GO (+200)", "Tap player card", "to collect", 300);
 
-  rfid.PCD_Init();
-  unsigned long startTime = millis();
-  while (millis() - startTime < 8000) {
-    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-      String scannedUID = "";
-      for (byte i = 0; i < rfid.uid.size; i++) {
-        scannedUID += (rfid.uid.uidByte[i] < 0x10 ? "0" : "");
-        scannedUID += String(rfid.uid.uidByte[i], HEX);
-        if (i < rfid.uid.size - 1) scannedUID += " ";
+void passgo() {
+  popup("PASS GO (+200)", "Tap card (OK=Exit)", nullptr, 300);
+
+  reader.PCD_Init();
+  unsigned long start = millis();
+  while (millis() - start < 8000) {
+    if (digitalRead(ok) == LOW || digitalRead(reset) == LOW) {
+      break;
+    }
+
+    if (reader.PICC_IsNewCardPresent() && reader.PICC_ReadCardSerial()) {
+      String uid = "";
+      for (byte i = 0; i < reader.uid.size; i++) {
+        uid += (reader.uid.uidByte[i] < 0x10 ? "0" : "");
+        uid += String(reader.uid.uidByte[i], HEX);
+        if (i < reader.uid.size - 1) uid += " ";
       }
-      scannedUID.toUpperCase();
+      uid.toUpperCase();
 
-      int foundIndex = -1;
+      int slot = -1;
       for (int i = 0; i < 4; i++) {
-        if (players[i].uid == scannedUID) {
-          foundIndex = i;
+        if (players[i].card == uid) {
+          slot = i;
           break;
         }
       }
 
-      if (foundIndex != -1) {
-        if (players[foundIndex].isBankrupt) {
-          showPopup("DENIED", players[foundIndex].name.c_str(), "Is Bankrupt!", 1600);
+      if (slot != -1) {
+        if (players[slot].isout) {
+          popup("DENIED", players[slot].name.c_str(), "Is Bankrupt!", 1600);
         } else {
-          players[foundIndex].balance += goReward;
-          savePlayerData(foundIndex);
+          players[slot].money += goreward;
+          saveplayer(slot);
 
-          char balStr[20];
-          sprintf(balStr, "New: $%ld", players[foundIndex].balance);
-          showPopup("GO COLLECTED!", players[foundIndex].name.c_str(), balStr, 1500);
+          char balmsg[20];
+          snprintf(balmsg, sizeof(balmsg), "New: $%ld", players[slot].money);
+          popup("GO COLLECTED!", players[slot].name.c_str(), balmsg, 1500);
         }
       } else {
-        showPopup("ERROR", "Unregistered card", nullptr, 1500);
+        popup("ERROR", "Unregistered card", nullptr, 1500);
       }
 
-      rfid.PICC_HaltA();
-      rfid.PCD_StopCrypto1();
-      showIdleScreen();
+      reader.PICC_HaltA();
+      reader.PCD_StopCrypto1();
+      idlescreen();
       return;
     }
-    delay(50);
+    delay(40);
   }
-  showIdleScreen();
+  idlescreen();
 }
 
-void handleGameReset() {
-  prefs.begin("bank", false);
+void wipegame() {
   for (int i = 0; i < 4; i++) {
-    players[i].balance = 1500;
-    players[i].isBankrupt = false;
-    String balKey = "bal" + String(i);
-    String bkrKey = "bkr" + String(i);
-    prefs.putLong(balKey.c_str(), 1500);
-    prefs.putBool(bkrKey.c_str(), false);
+    players[i].money = 1500;
+    players[i].isout = false;
+    saveplayer(i);
   }
-  prefs.end();
 
-  showPopup("GAME RESET", "All players", "Reset to $1500", 1600);
-  showIdleScreen();
+  popup("GAME RESET", "All players", "Reset to $1500", 1600);
+  idlescreen();
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  Wire.begin(21, 22);
+  screen.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
+  SPI.begin();
+  reader.PCD_Init();
+
+  pinMode(btn100, INPUT_PULLUP);
+  pinMode(btn10,  INPUT_PULLUP);
+  pinMode(btn1,   INPUT_PULLUP);
+  pinMode(mode,   INPUT_PULLUP);
+  pinMode(ok,     INPUT_PULLUP);
+  pinMode(go,     INPUT_PULLUP);
+  pinMode(reset,  INPUT_PULLUP);
+
+  mem.begin("bank", false);
+  loaddata();
+
+  idlescreen();
+}
+
+void loop() {
+  if (activeplayer == -1) {
+    if (millis() - lastpress >= wait) {
+      if (digitalRead(go) == LOW) {
+        lastpress = millis();
+        passgo();
+        return;
+      }
+      
+      if (digitalRead(reset) == LOW) {
+        unsigned long holdStart = millis();
+        while (digitalRead(reset) == LOW) {
+          if (millis() - holdStart > 2500) {
+            while (digitalRead(reset) == LOW) delay(10);
+            lastpress = millis();
+            wipegame();
+            return;
+          }
+          delay(20);
+        }
+      }
+    }
+    handlecard();
+  } else {
+    handlebuttons();
+  }
 }

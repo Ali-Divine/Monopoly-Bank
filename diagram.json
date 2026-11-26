@@ -7,8 +7,7 @@
       "type": "board-esp32-devkit-c-v4",
       "id": "esp",
       "top": 153.6,
-      "left": -91.16,
-      "attrs": {}
+      "left": -91.16
     },
     {
       "type": "board-ssd1306",
@@ -23,12 +22,11 @@
       "type": "board-mfrc522",
       "id": "rfid1",
       "top": 573.35,
-      "left": -217.36,
-      "attrs": {}
+      "left": -217.36
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btn100",
+      "id": "b100",
       "top": 371,
       "left": -211.2,
       "attrs": {
@@ -38,7 +36,7 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btn10",
+      "id": "b10",
       "top": 438.2,
       "left": -211.2,
       "attrs": {
@@ -48,7 +46,7 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btn1",
+      "id": "b1",
       "top": 505.4,
       "left": -211.2,
       "attrs": {
@@ -58,17 +56,17 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnMode",
+      "id": "bmode",
       "top": 371,
       "left": -38.4,
       "attrs": {
         "color": "blue",
-        "label": "MODE +/-"
+        "label": "MODE"
       }
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnOk",
+      "id": "bok",
       "top": 438.2,
       "left": -38.4,
       "attrs": {
@@ -78,17 +76,17 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnGo",
+      "id": "bgo",
       "top": 505.4,
       "left": -38.4,
       "attrs": {
         "color": "yellow",
-        "label": "PASS GO"
+        "label": "GO"
       }
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "btnReset",
+      "id": "breset",
       "top": 188.6,
       "left": -201.6,
       "attrs": {
@@ -199,115 +197,87 @@
     ],
     [
       "esp:13",
-      "btn100:1.l",
+      "b100:1.l",
       "green",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btn100:2.l",
+      "b100:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:12",
-      "btn10:1.l",
+      "b10:1.l",
       "green",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btn10:2.l",
+      "b10:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:14",
-      "btn1:1.l",
+      "b1:1.l",
       "green",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btn1:2.l",
+      "b1:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:27",
-      "btnMode:1.l",
+      "bmode:1.l",
       "blue",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btnMode:2.l",
+      "bmode:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:26",
-      "btnOk:1.l",
+      "bok:1.l",
       "grey",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btnOk:2.l",
+      "bok:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:25",
-      "btnGo:1.l",
+      "bgo:1.l",
       "yellow",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btnGo:2.l",
+      "bgo:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ],
     [
       "esp:33",
-      "btnReset:1.l",
+      "breset:1.l",
       "red",
-      [
-        "h60"
-      ]
+      []
     ],
     [
       "esp:GND.2",
-      "btnReset:2.l",
+      "breset:2.l",
       "black",
-      [
-        "h40"
-      ]
+      []
     ]
   ],
   "dependencies": {}
