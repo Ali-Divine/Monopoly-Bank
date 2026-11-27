@@ -134,4 +134,6 @@ Before the first turn, tap all of ur RFID cards by tapping them one by one at th
 
 ### Testing video
 
-https://github.com/user-attachments/assets/5004af7a-5906-44a6-af74-8d28106729cc
+https://github.com/user-attachments/assets/ad763093-9c7e-475d-be19-2a41a589368c
+
+
